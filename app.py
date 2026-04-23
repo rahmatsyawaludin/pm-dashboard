@@ -22,9 +22,8 @@ def load_data():
         return f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
     
     # 1. Load WBS/Tasks
-    tasks = pd.read_csv(get_url("WBS"))
-    # This 'rename' step is the most important part!
-    tasks = tasks.rename(columns={
+    tasks_df = pd.read_csv(get_url("WBS"))
+    tasks_df = tasks_df.rename(columns={
         'Task ID': 'id',
         'Phase': 'phase',
         'Task Name': 'task',
@@ -37,23 +36,25 @@ def load_data():
     })
     
     # 2. Load Budget
-    budget = pd.read_csv(get_url("Budget"))
-    budget = budget.rename(columns={
+    budget_df = pd.read_csv(get_url("Budget"))
+    budget_df = budget_df.rename(columns={
         'Item ID': 'id',
         'Category': 'category',
         'Description': 'item',
-        'Estimated ($)': 'est',
-        'Actual ($)': 'act',
+        'Estimated ($)': 'est',   # Keep it 'est' to match your KPI logic
+        'Actual ($)': 'act',      # Keep it 'act' to match your KPI logic
         'Status': 'status'
     })
 
-    # 3. Convert dates (This is where your error was happening)
-    tasks['start'] = pd.to_datetime(tasks['start']).dt.date
-    tasks['end'] = pd.to_datetime(tasks['end']).dt.date
+    # Clean up dates and remove empty rows if any
+    tasks_df = tasks_df.dropna(subset=['start', 'end'])
+    tasks_df['start'] = pd.to_datetime(tasks_df['start']).dt.date
+    tasks_df['end'] = pd.to_datetime(tasks_df['end']).dt.date
     
-    return tasks, budget
+    return tasks_df, budget_df
 
-df_tasks, df_budget = load_data()
+# CRITICAL: This line assigns the data to the names your script expects
+tasks, budget = load_data() 
 
 
 
