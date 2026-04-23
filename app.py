@@ -14,48 +14,25 @@ st.set_page_config(
 )
 
 # ─── DATA ──────────────────────────────────────────────────────────────────────
-@st.cache_data
+SHEET_ID = "12A3aiONTf4SEuEA2Ktont9nTV56xcXPEh2zJvF50xhs"
+
+@st.cache_data(ttl=600)
 def load_data():
-    tasks = pd.DataFrame([
-        {"id":"TSK-001","phase":"Discovery","task":"Stakeholder Interviews (Desamind)","owner":"Rahmat","start":date(2026,5,1),"end":date(2026,5,5),"status":"Completed","pct":1.0,"priority":"High"},
-        {"id":"TSK-002","phase":"Discovery","task":"Community Needs Assessment","owner":"Ahmad","start":date(2026,5,3),"end":date(2026,5,10),"status":"Completed","pct":1.0,"priority":"High"},
-        {"id":"TSK-003","phase":"Discovery","task":"Technical Feasibility Study (Offline Sync)","owner":"Siti","start":date(2026,5,6),"end":date(2026,5,12),"status":"In Progress","pct":0.6,"priority":"Medium"},
-        {"id":"TSK-004","phase":"Design","task":"UI/UX Low-Fi Wireframes","owner":"Rahmat","start":date(2026,5,13),"end":date(2026,5,20),"status":"In Progress","pct":0.4,"priority":"High"},
-        {"id":"TSK-005","phase":"Design","task":"Educational Content Architecture","owner":"Dewi","start":date(2026,5,15),"end":date(2026,5,25),"status":"Not Started","pct":0.0,"priority":"Medium"},
-        {"id":"TSK-006","phase":"Development","task":"Database Schema Design","owner":"Siti","start":date(2026,5,26),"end":date(2026,6,5),"status":"Not Started","pct":0.0,"priority":"High"},
-        {"id":"TSK-007","phase":"Development","task":"PWA Offline Storage Implementation","owner":"Siti","start":date(2026,6,2),"end":date(2026,6,16),"status":"Not Started","pct":0.0,"priority":"High"},
-        {"id":"TSK-008","phase":"Development","task":"User Authentication Module","owner":"Ahmad","start":date(2026,6,11),"end":date(2026,6,21),"status":"Not Started","pct":0.0,"priority":"Medium"},
-        {"id":"TSK-009","phase":"Development","task":"Content Sync Module","owner":"Siti","start":date(2026,6,16),"end":date(2026,7,6),"status":"Not Started","pct":0.0,"priority":"High"},
-        {"id":"TSK-010","phase":"Content","task":"Primary Education Module Upload","owner":"Dewi","start":date(2026,7,2),"end":date(2026,7,16),"status":"Not Started","pct":0.0,"priority":"Medium"},
-        {"id":"TSK-011","phase":"QA/Testing","task":"Alpha Testing (Internal)","owner":"Rahmat","start":date(2026,7,17),"end":date(2026,7,26),"status":"Not Started","pct":0.0,"priority":"High"},
-        {"id":"TSK-012","phase":"QA/Testing","task":"Beta Testing (Community)","owner":"Ahmad","start":date(2026,7,27),"end":date(2026,8,11),"status":"Not Started","pct":0.0,"priority":"High"},
-        {"id":"TSK-013","phase":"Deployment","task":"Final Launch Preparation","owner":"Rahmat","start":date(2026,8,12),"end":date(2026,8,16),"status":"Not Started","pct":0.0,"priority":"High"},
-        {"id":"TSK-014","phase":"Support","task":"User Training Documentation","owner":"Dewi","start":date(2026,8,16),"end":date(2026,8,31),"status":"Not Started","pct":0.0,"priority":"Low"},
-    ])
+    def get_url(sheet_name):
+        return f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
+    
+    # This replaces all the manual dictionary lists from lines 20-58
+    tasks = pd.read_csv(get_url("WBS"))
+    budget = pd.read_csv(get_url("Budget"))
+    
+    # Critical: Convert date columns so the Gantt chart doesn't break
+    tasks['start'] = pd.to_datetime(tasks['start']).dt.date
+    tasks['end'] = pd.to_datetime(tasks['end']).dt.date
+    
+    return tasks, budget
 
-    budget = pd.DataFrame([
-        {"id":"FIN-001","category":"Infrastructure","desc":"Cloud Hosting (Firebase)","estimated":500,"actual":480,"status":"Paid","vendor":"Google"},
-        {"id":"FIN-002","category":"Design","desc":"Figma Professional License","estimated":150,"actual":150,"status":"Paid","vendor":"Figma"},
-        {"id":"FIN-003","category":"Development","desc":"Contractor: Database Specialist","estimated":2000,"actual":2200,"status":"Partial","vendor":"Freelance-S"},
-        {"id":"FIN-004","category":"Development","desc":"PWA Components Library","estimated":300,"actual":300,"status":"Paid","vendor":"Vendor-X"},
-        {"id":"FIN-005","category":"Content","desc":"Subject Matter Expert Fees","estimated":1200,"actual":1200,"status":"Pending","vendor":"Expert-A"},
-        {"id":"FIN-006","category":"Marketing","desc":"Community Outreach Kits","estimated":800,"actual":950,"status":"Paid","vendor":"PrintShop"},
-        {"id":"FIN-007","category":"Infrastructure","desc":"Offline Server Hardware (RasPi)","estimated":400,"actual":420,"status":"Paid","vendor":"LocalStore"},
-        {"id":"FIN-008","category":"Admin","desc":"LPDP Documentation Fees","estimated":100,"actual":50,"status":"Paid","vendor":"Internal"},
-    ])
+df_tasks, df_budget = load_data()
 
-    risks = pd.DataFrame([
-        {"id":"RSK-001","category":"Technical","desc":"Sync conflict with slow internet","impact":5,"prob":4,"mitigation":"Implement last-write-wins protocol"},
-        {"id":"RSK-002","category":"Adoption","desc":"Low community participation","impact":4,"prob":2,"mitigation":"Incentivize top learners with badges"},
-        {"id":"RSK-003","category":"Budget","desc":"API costs exceeding limit","impact":3,"prob":3,"mitigation":"Set hard cost alerts and usage limits"},
-        {"id":"RSK-004","category":"Legal","desc":"Data privacy compliance","impact":5,"prob":1,"mitigation":"Encrypt all local user data (AES-256)"},
-    ])
-    risks["score"] = risks["impact"] * risks["prob"]
-    risks["level"] = risks["score"].apply(lambda s: "Critical" if s >= 15 else ("High" if s >= 8 else "Low"))
-
-    return tasks, budget, risks
-
-tasks, budget, risks = load_data()
 
 # ─── COMPUTED METRICS ──────────────────────────────────────────────────────────
 today = date.today()
