@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ─── DATA ──────────────────────────────────────────────────────────────────────
+# ─── DATA CONNECTION ───────────────────────────────────────────────────────────
 SHEET_ID = "12A3aiONTf4SEuEA2Ktont9nTV56xcXPEh2zJvF50xhs"
 
 @st.cache_data(ttl=600)
@@ -41,28 +41,100 @@ def load_data():
         'Item ID': 'id',
         'Category': 'category',
         'Description': 'item',
-        'Estimated ($)': 'est',   # Keep it 'est' to match your KPI logic
-        'Actual ($)': 'act',      # Keep it 'act' to match your KPI logic
+        'Estimated ($)': 'estimated', 
+        'Actual ($)': 'actual',      
         'Status': 'status'
     })
 
-    # Clean up dates and remove empty rows if any
+    # Clean up dates and handle empty rows
     tasks_df = tasks_df.dropna(subset=['start', 'end'])
     tasks_df['start'] = pd.to_datetime(tasks_df['start']).dt.date
     tasks_df['end'] = pd.to_datetime(tasks_df['end']).dt.date
     
     return tasks_df, budget_df
 
-# CRITICAL: This line assigns the data to the names your script expects
-tasks, budget = load_data() 
+# Initialize Data
+try:
+    tasks, budget = load_data()
+    st.toast("✅ Live Data Synced", icon="☁️")
+except Exception as e:
+    st.error(f"Connection Error: {e}")
+    st.stop()
 
+# ─── CALCULATIONS ──────────────────────────────────────────────────────────────
+total_budget = budget["estimated"].sum()
+total_spent  = budget["actual"].sum()
+variance     = total_budget - total_spent
+overall_pct  = tasks["pct"].mean()
+days_to_launch = (date(2026, 8, 15) - date.today()).days
 
+# ─── HEADER ────────────────────────────────────────────────────────────────────
+st.title("🏗️ Project Executive Dashboard")
+st.markdown("### Community-Based Offline Learning Companion App")
 
+# ─── KPI CARDS ─────────────────────────────────────────────────────────────────
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 
-# ─── COMPUTED METRICS ──────────────────────────────────────────────────────────
-today = date.today()
-total_budget   = budget["estimated"].sum()
-total_spent    = budget["actual"].sum()
+with kpi1:
+    st.metric("Total Budget", f"${total_budget:,.0f}")
+with kpi2:
+    st.metric("Spent to Date", f"${total_spent:,.0f}", delta=f"{(total_spent/total_budget)*100:.1f}% of total", delta_color="inverse")
+with kpi3:
+    st.metric("Budget Variance", f"${variance:,.0f}", delta="Under Budget" if variance >= 0 else "Over Budget")
+with kpi4:
+    st.metric("Overall Progress", f"{overall_pct*100:.1f}%")
+
+st.divider()
+
+# ─── VISUALS: GANTT & PHASE COMPLETION ─────────────────────────────────────────
+col_left, col_right = st.columns([2, 1])
+
+with col_left:
+    st.subheader("📅 Project Timeline (WBS)")
+    fig_gantt = px.timeline(
+        tasks, 
+        x_start="start", 
+        x_end="end", 
+        y="task", 
+        color="phase",
+        hover_data=["owner", "status", "pct"],
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+    fig_gantt.update_yaxes(autorange="reversed")
+    fig_gantt.update_layout(height=400, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig_gantt, use_container_width=True)
+
+with col_right:
+    st.subheader("📈 Phase Completion")
+    phase_stats = tasks.groupby("phase")["pct"].mean().reset_index()
+    fig_phase = px.bar(
+        phase_stats, 
+        x="pct", 
+        y="phase", 
+        orientation='h',
+        color="phase",
+        text_auto='.0%',
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+    fig_phase.update_layout(showlegend=False, height=400, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig_phase, use_container_width=True)
+
+# ─── BUDGET TABLE ──────────────────────────────────────────────────────────────
+st.subheader("💰 Financial Ledger & Variance Analysis")
+st.dataframe(
+    budget.style.format({"estimated": "${:,.0f}", "actual": "${:,.0f}"})
+    .applymap(lambda x: 'color: red' if x < 0 else '', subset=['estimated']),
+    use_container_width=True
+)
+
+# ─── FOOTER ────────────────────────────────────────────────────────────────────
+st.info(f"💡 **PM Tip:** The data above is synced live from Google Sheets. To update the dashboard, simply edit the 'WBS' or 'Budget' tabs in the source spreadsheet.")
+
+st.markdown(f"""
+<div style="text-align: center; color: gray; padding: 20px;">
+    Built by Rahmat Syawaludin · LPDP Scholar · Informatics Engineering Education
+</div>
+""", unsafe_allow_html=True)
 remaining      = total_budget - total_spent
 tasks_done     = (tasks["status"] == "Completed").sum()
 overall_pct    = tasks["pct"].mean()
