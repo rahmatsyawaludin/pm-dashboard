@@ -21,17 +21,39 @@ def load_data():
     def get_url(sheet_name):
         return f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
     
-    # This replaces all the manual dictionary lists from lines 20-58
+    # 1. Load the Tasks sheet
     tasks = pd.read_csv(get_url("WBS"))
-    budget = pd.read_csv(get_url("Budget"))
     
-    # Critical: Convert date columns so the Gantt chart doesn't break
+    # 2. RENAME columns to match what the rest of your app expects
+    # Map 'Google Sheet Header' : 'Python Variable Name'
+    tasks = tasks.rename(columns={
+        'Start Date': 'start',
+        'End Date': 'end',
+        'Task Name': 'task',
+        'Assigned To': 'owner',
+        'Status': 'status',
+        '% Complete': 'pct',
+        'Priority': 'priority',
+        'Task ID': 'id',
+        'Phase': 'phase'
+    })
+    
+    # 3. Load the Budget sheet
+    budget = pd.read_csv(get_url("Budget"))
+    budget = budget.rename(columns={
+        'Category': 'category',
+        'Description': 'item',
+        'Estimated Cost ($)': 'est',
+        'Actual Cost ($)': 'act',
+        'Payment Status': 'status'
+    })
+
+    # Now this line won't crash because 'start' and 'end' exist
     tasks['start'] = pd.to_datetime(tasks['start']).dt.date
     tasks['end'] = pd.to_datetime(tasks['end']).dt.date
     
     return tasks, budget
 
-df_tasks, df_budget = load_data()
 
 
 # ─── COMPUTED METRICS ──────────────────────────────────────────────────────────
