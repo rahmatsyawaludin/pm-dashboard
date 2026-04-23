@@ -18,7 +18,7 @@ st.set_page_config(
 SHEET_ID = "12A3aiONTf4SEuEA2Ktont9nTV56xcXPEh2zJvF50xhs"
 
 def sheet_url(gid: str) -> str:
-    return f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={gid}"
+    return f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={gid}"
 
 # ─── DATA ──────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=300)  # refresh every 5 minutes
