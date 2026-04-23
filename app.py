@@ -21,38 +21,40 @@ def load_data():
     def get_url(sheet_name):
         return f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
     
-    # 1. Load the Tasks sheet
+    # 1. Load WBS/Tasks
     tasks = pd.read_csv(get_url("WBS"))
-    
-    # 2. RENAME columns to match what the rest of your app expects
-    # Map 'Google Sheet Header' : 'Python Variable Name'
+    # This 'rename' step is the most important part!
     tasks = tasks.rename(columns={
-        'Start Date': 'start',
-        'End Date': 'end',
+        'Task ID': 'id',
+        'Phase': 'phase',
         'Task Name': 'task',
         'Assigned To': 'owner',
+        'Start Date': 'start',
+        'End Date': 'end',
         'Status': 'status',
         '% Complete': 'pct',
-        'Priority': 'priority',
-        'Task ID': 'id',
-        'Phase': 'phase'
+        'Priority': 'priority'
     })
     
-    # 3. Load the Budget sheet
+    # 2. Load Budget
     budget = pd.read_csv(get_url("Budget"))
     budget = budget.rename(columns={
+        'Item ID': 'id',
         'Category': 'category',
         'Description': 'item',
-        'Estimated Cost ($)': 'est',
-        'Actual Cost ($)': 'act',
-        'Payment Status': 'status'
+        'Estimated ($)': 'est',
+        'Actual ($)': 'act',
+        'Status': 'status'
     })
 
-    # Now this line won't crash because 'start' and 'end' exist
+    # 3. Convert dates (This is where your error was happening)
     tasks['start'] = pd.to_datetime(tasks['start']).dt.date
     tasks['end'] = pd.to_datetime(tasks['end']).dt.date
     
     return tasks, budget
+
+df_tasks, df_budget = load_data()
+
 
 
 
