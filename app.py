@@ -540,15 +540,18 @@ with col_risk:
     st.markdown('<div class="section-title">⚠️ Risk Register</div>', unsafe_allow_html=True)
 
     # Heatmap
-    matrix = np.zeros((5, 5))
-    risk_positions = []
-    for _, r in risks.iterrows():
-        i = r["impact"] - 1
-        p = r["prob"] - 1
-        matrix[i][p] += r["score"]
-        risk_positions.append((p, i, r["id"], r["score"]))
 
-    fig_heat = go.Figure()
+matrix = np.zeros((5, 5))
+risk_positions = []
+
+for _, r in risks.iterrows():
+    i = max(0, min(4, int(r["impact"]) - 1))
+    p = max(0, min(4, int(r["prob"]) - 1))
+
+    matrix[i][p] += r["score"]
+    risk_positions.append((p, i, r["id"], r["score"]))
+
+fig_heat = go.Figure()
 
     # Background zones
     for y in range(5):
