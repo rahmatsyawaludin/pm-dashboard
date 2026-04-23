@@ -27,7 +27,7 @@ def load_data():
         # ── TASKS (WBS sheet) ──
         # Expected columns: Task ID, Phase, Task Name, Assigned To,
         #                   Start Date, End Date, Status, % Complete, Priority
-        raw_tasks = pd.read_csv(sheet_url("0"), skiprows=4)
+        raw_tasks = pd.read_csv(sheet_url("861855294"), skiprows=4)        
         raw_tasks.columns = raw_tasks.columns.str.strip()
 
         # Find the actual header row if structure has a title block on top
